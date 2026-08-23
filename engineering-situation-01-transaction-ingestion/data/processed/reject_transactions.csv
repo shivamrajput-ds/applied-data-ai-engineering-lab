@@ -1,15 +1,15 @@
-transaction_id,customer_id,amount,currency,timestamp
-txn_1003,cust_203,-75.00,INR,2026-08-22T09:20:10
-txn_1005,,1200,INR,2026-08-22T09:28:00
-txn_1006,cust_206,abc,INR,2026-08-22T09:32:17
-txn_1007,cust_207,2100.75,BTC,2026-08-22T09:35:30
-txn_1008,cust_208,340.25,USD,22-08-2026 09:40
-txn_1010,cust_210,0,EUR,2026-08-22T09:48:52
-txn_1009,cust_209,999.00,INR,2026-08-22T09:44:11
-txn_1014,cust_214,2750,INR,invalid-date
-txn_1016,cust_216,,INR,2026-08-22T10:13:22
-,cust_218,550.00,INR,2026-08-22T10:22:47
-txn_1011,cust_211,9100.00,INR,2026-08-22T09:52:16
-txn_1022,cust_222,780,INR,
-txn_1024,cust_224,250,JPY,2026-08-22T10:50:01
-txn_1028,   ,300,USD,2026-08-22T11:08:41
+transaction_id,customer_id,amount,currency,timestamp,rejection_reason
+txn_1003,cust_203,-75.00,INR,2026-08-22T09:20:10,invalid amount
+txn_1005,,1200,INR,2026-08-22T09:28:00,invalid customer id
+txn_1006,cust_206,abc,INR,2026-08-22T09:32:17,invalid amount
+txn_1007,cust_207,2100.75,BTC,2026-08-22T09:35:30,invalid currency
+txn_1008,cust_208,340.25,USD,22-08-2026 09:40,invalid timestamp
+txn_1010,cust_210,0,EUR,2026-08-22T09:48:52,invalid amount
+txn_1009,cust_209,999.00,INR,2026-08-22T09:44:11,duplicate_record
+txn_1014,cust_214,2750,INR,invalid-date,invalid timestamp
+txn_1016,cust_216,,INR,2026-08-22T10:13:22,invalid amount
+,cust_218,550.00,INR,2026-08-22T10:22:47,invalid transaction id
+txn_1011,cust_211,9100.00,INR,2026-08-22T09:52:16,invalid transaction id
+txn_1022,cust_222,780,INR,,invalid timestamp
+txn_1024,cust_224,250,JPY,2026-08-22T10:50:01,invalid currency
+txn_1028,   ,300,USD,2026-08-22T11:08:41,invalid customer id

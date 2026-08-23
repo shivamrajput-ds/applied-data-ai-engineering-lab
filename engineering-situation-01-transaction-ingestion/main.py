@@ -2,45 +2,82 @@ import os
 import pandas as pd
 from typing import List
 
-def clean_data(df: pd.DataFrame,valid_currency:List[str])-> pd.DataFrame:
+def validate_data(df: pd.DataFrame,valid_currency:List[str])-> pd.DataFrame:
     
     valid_data = df.copy()
+    valid_data["rejection_reason"] = ""
     
     # remove whole row duplicates
-    valid_data = valid_data.drop_duplicates()
+    duplicate_mask = valid_data.duplicated()
+    valid_data.loc[duplicate_mask,"rejection_reason"] = "duplicate_record"
+    
+
 
     # to validate the currency
-    valid_data = valid_data[valid_data["currency"].isin( valid_currency)]
+    invalid_currency = (~valid_data["currency"].isin(valid_currency) & (valid_data["rejection_reason"] == ""))
+    valid_data.loc[invalid_currency,"rejection_reason"] = "invalid currency"
+    
     
     # to validate the amount
-    valid_data["amount"] = pd.to_numeric(valid_data["amount"],errors ="coerce")
-    valid_data = valid_data[valid_data["amount"] > 0] 
+    converted_amount  = pd.to_numeric(valid_data["amount"],errors ="coerce")
+    invalid_amount = (
+    (converted_amount.isnull() | (converted_amount <= 0))
+    & (valid_data["rejection_reason"] == "")
+)
+    valid_data.loc[invalid_amount,"rejection_reason"] = "invalid amount"
     
-    # to validate the transaction_id
-    valid_data = valid_data.drop_duplicates(subset=["transaction_id"],keep="first")
-    valid_data = valid_data[valid_data["transaction_id"].str.strip() != ""]
-    valid_data = valid_data[valid_data['transaction_id'].notna()]
+    
+    # to validate the transaction_id  
+    invalid_transaction_id = (
+    (
+        valid_data["transaction_id"].duplicated(keep="first")
+        | (valid_data["transaction_id"].str.strip() == "")
+        | valid_data["transaction_id"].isnull()
+    )
+    & (valid_data["rejection_reason"] == "")
+)
+    valid_data.loc[invalid_transaction_id,"rejection_reason"] = "invalid transaction id"
     
     # to validate the customer_id
-    customer_id = valid_data['customer_id'].astype("string").str.strip()
-    
-    valid_data = valid_data[customer_id.notna() &(customer_id != "") & (customer_id != "0")]
+    customer_id = valid_data["customer_id"].astype("string").str.strip()
+    invalid_customer_id = (
+        (customer_id.isnull() | (customer_id == ""))
+        & (valid_data["rejection_reason"] == "")
+    )
+    valid_data.loc[
+        invalid_customer_id,
+        "rejection_reason"
+    ] = "invalid customer id"
     
     # to validate timestamp
     parsed_timestamp = pd.to_datetime(valid_data['timestamp'], format="ISO8601",
     errors="coerce"
 )
-    valid_data = valid_data[parsed_timestamp.notna()]
-    
+    invalid_timestamp = (
+    parsed_timestamp.isnull()
+    & (valid_data["rejection_reason"] == "")
+)
+
+    valid_data.loc[
+        invalid_timestamp,
+        "rejection_reason"
+    ] = "invalid timestamp"
+        
     return valid_data
         
 def main():
     path = os.path.join("data","raw","raw_transactions_day1.csv")
     data = pd.read_csv(path)
     
-    cleaned_data = clean_data(data,["INR","USD","EUR"])
-    rejected_data = data.loc[~data.index.isin(cleaned_data.index)].copy()
-    
+    validated_data = validate_data(data, ["INR", "USD", "EUR"])
+
+    rejected_data = validated_data[
+        validated_data["rejection_reason"] != ""
+    ].copy()
+
+    cleaned_data = validated_data[
+        validated_data["rejection_reason"] == ""
+    ].copy()
     # to move the clean data into Processed folder
     cleaned_data.to_csv("data/processed/clean_transactions.csv", index=False)
     
