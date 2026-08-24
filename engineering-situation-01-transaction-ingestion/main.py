@@ -9,7 +9,7 @@ def validate_data(df: pd.DataFrame,valid_currency:List[str])-> pd.DataFrame:
     
     # remove whole row duplicates
     duplicate_mask = valid_data.duplicated()
-    valid_data.loc[duplicate_mask,"rejection_reason"] = "duplicate_record"
+    valid_data.loc[duplicate_mask,"rejection_reason"] = "duplicate record"
     
 
 
@@ -41,7 +41,7 @@ def validate_data(df: pd.DataFrame,valid_currency:List[str])-> pd.DataFrame:
     # to validate the customer_id
     customer_id = valid_data["customer_id"].astype("string").str.strip()
     invalid_customer_id = (
-        (customer_id.isnull() | (customer_id == ""))
+        (customer_id.isnull() | (customer_id == "") | (customer_id == "0"))
         & (valid_data["rejection_reason"] == "")
     )
     valid_data.loc[
