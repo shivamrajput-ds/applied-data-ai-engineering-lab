@@ -5,11 +5,14 @@ txn_1006,cust_206,abc,INR,2026-08-22T09:32:17,invalid amount
 txn_1007,cust_207,2100.75,BTC,2026-08-22T09:35:30,invalid currency
 txn_1008,cust_208,340.25,USD,22-08-2026 09:40,invalid timestamp
 txn_1010,cust_210,0,EUR,2026-08-22T09:48:52,invalid amount
+txn_1011,cust_211,4500.00,INR,2026-08-22T09:52:16,conflicting duplicate
 txn_1009,cust_209,999.00,INR,2026-08-22T09:44:11,duplicate record
 txn_1014,cust_214,2750,INR,invalid-date,invalid timestamp
 txn_1016,cust_216,,INR,2026-08-22T10:13:22,invalid amount
 ,cust_218,550.00,INR,2026-08-22T10:22:47,invalid transaction id
-txn_1011,cust_211,9100.00,INR,2026-08-22T09:52:16,invalid transaction id
+txn_1011,cust_211,9100.00,INR,2026-08-22T09:52:16,conflicting duplicate
 txn_1022,cust_222,780,INR,,invalid timestamp
 txn_1024,cust_224,250,JPY,2026-08-22T10:50:01,invalid currency
 txn_1028,   ,300,USD,2026-08-22T11:08:41,invalid customer id
+txn_7001, cust_701, 1000, INR, 2026-08-22T11:04:12,conflicting duplicate
+txn_7001, cust_701, 2500, INR, 2026-08-22T11:04:12,conflicting duplicate

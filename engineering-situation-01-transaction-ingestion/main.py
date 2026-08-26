@@ -11,7 +11,39 @@ def validate_data(df: pd.DataFrame,valid_currency:List[str])-> pd.DataFrame:
     duplicate_mask = valid_data.duplicated()
     valid_data.loc[duplicate_mask,"rejection_reason"] = "duplicate record"
     
+    # remove row conflicts
+    compare_columns = [
+    "customer_id",
+    "amount",
+    "currency",
+    "timestamp"
+]
 
+    conflict_check = (
+        valid_data
+        .groupby("transaction_id")[compare_columns]
+        .nunique(dropna=False)
+    )
+
+    conflicting_ids = (
+        conflict_check[
+            (conflict_check > 1).any(axis=1)
+        ]
+        .index
+    )
+
+    conflicting_mask = (
+        valid_data["transaction_id"].isin(conflicting_ids)
+        & (valid_data["rejection_reason"] == "")
+    )
+
+    valid_data.loc[
+
+        conflicting_mask,
+
+        "rejection_reason"
+
+    ] = "conflicting duplicate"
 
     # to validate the currency
     invalid_currency = (~valid_data["currency"].isin(valid_currency) & (valid_data["rejection_reason"] == ""))
