@@ -1,0 +1,3 @@
+transaction_id,customer_id,amount,timestamp
+txn_d001,cust_d01,700,2026-09-01T12:00:00
+txn_d002,cust_d02,950,2026-09-01T12:05:00

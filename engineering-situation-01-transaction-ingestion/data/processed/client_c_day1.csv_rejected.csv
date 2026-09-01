@@ -1,0 +1,4 @@
+transaction_id,customer_id,amount,currency,timestamp,rejection_reason
+txn_c003,cust_c03,2750,EUR,2026-09-01T11:10:00,conflicting duplicate
+txn_c003,cust_c03,3250,EUR,2026-09-01T11:10:00,conflicting duplicate
+txn_c004,   ,430,INR,2026-09-01T11:15:00,invalid customer id

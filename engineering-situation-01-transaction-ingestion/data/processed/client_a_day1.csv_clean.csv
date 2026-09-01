@@ -1,0 +1,4 @@
+transaction_id,customer_id,amount,currency,timestamp,rejection_reason
+txn_a001,cust_a01,1200.5,INR,2026-09-01T09:00:00,
+txn_a002,cust_a02,499.99,USD,2026-09-01T09:05:00,
+txn_a004,cust_a04,750.0,EUR,2026-09-01T09:15:00,

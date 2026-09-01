@@ -3,38 +3,40 @@
 [![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python\&logoColor=white)](https://www.python.org/)
 [![Pandas](https://img.shields.io/badge/Pandas-Data%20Engineering-150458?logo=pandas\&logoColor=white)](https://pandas.pydata.org/)
 [![pytest](https://img.shields.io/badge/pytest-Testing-0A9EDC?logo=pytest\&logoColor=white)](https://pytest.org/)
-[![uv](https://img.shields.io/badge/uv-Package%20Management-DE5FE9)](https://docs.astral.sh/uv/)
+[![uv](https://img.shields.io/badge/uv-Environment%20%26%20Dependencies-DE5FE9)](https://docs.astral.sh/uv/)
 [![Status](https://img.shields.io/badge/Lab-Active-success)](#current-status)
 
-> A hands-on engineering lab for turning realistic Data, Machine Learning, Applied AI, and backend requirements into clean, testable, reliable, and scalable systems.
+> A hands-on engineering lab for converting realistic Data, Machine Learning, Applied AI, and backend requirements into clean, testable, reliable, and scalable systems.
 
-This repository focuses on **engineering problem solving**, not isolated syntax exercises or algorithm drills.
+This repository focuses on **engineering problem solving** rather than isolated syntax practice or algorithm drills.
 
-Every situation begins with an unfamiliar requirement and evolves through:
+Each engineering situation evolves through:
 
-**Requirements → Assumptions → Design → Implementation → Testing → Edge Cases → Reliability → System Design → Scaling**
+**Requirements → Assumptions → Design → Implementation → Testing → Edge Cases → Reliability → Scaling → System Design**
 
 ---
 
-## Repository Goal
+## Why This Repository Exists
 
-Knowing Python, Pandas, SQL, FastAPI, MLflow, Docker, RAG frameworks, and ML libraries individually is different from being able to receive an unfamiliar engineering requirement and build a sensible solution from scratch.
+Knowing Python, Pandas, SQL, FastAPI, Docker, MLflow, RAG frameworks, and ML libraries individually is different from receiving an unfamiliar requirement and building a reliable system from scratch.
 
-This lab exists to strengthen that second skill.
+This lab is designed to strengthen that second skill.
 
 The focus is on learning how to:
 
-* understand ambiguous requirements
-* define inputs, outputs, constraints, and assumptions
-* identify realistic failure modes
+* understand real-world requirements
+* identify inputs, outputs, constraints, and assumptions
+* discover failure modes
 * design maintainable components
 * write reliable implementation code
 * handle malformed and duplicate data
 * build testable systems
-* design idempotent processing
-* reason about retries and failures
-* make justified architecture decisions
-* scale systems only when requirements demand it
+* make processing idempotent
+* track processing state
+* design safe retries
+* isolate failures
+* reason about memory and scale
+* make justified architecture trade-offs
 * avoid unnecessary overengineering
 
 ---
@@ -45,13 +47,11 @@ The focus is on learning how to:
 | -- | ----------------------------------------------------------------------------------- | ------------------------- | ------- | ----------- |
 | 01 | [Transaction Ingestion Pipeline](./engineering-situation-01-transaction-ingestion/) | Python / Data Engineering | Level 2 | In Progress |
 
-More situations will progressively cover ML Systems, APIs, SQL, RAG, Agentic AI, production reliability, and system design.
+Future situations will progressively move across ML Systems, APIs, SQL, RAG, Agentic AI, production reliability, and system design.
 
 ---
 
 # Engineering Workflow
-
-Each situation follows an iterative engineering lifecycle:
 
 ```text
 Understand Requirements
@@ -66,20 +66,20 @@ Design Components
         ↓
 Implement Core Logic
         ↓
-Test Important Behaviour
+Write Tests
         ↓
-Introduce Hidden Edge Cases
+Introduce Edge Cases
         ↓
 Improve Reliability
         ↓
-Design for Larger Scale
+Handle Scale
+        ↓
+Design the Larger System
         ↓
 Evaluate Trade-offs
 ```
 
-The objective is not to build the most complicated architecture.
-
-> **Build the simplest correct system for the current requirements, then evolve it only when new constraints justify the complexity.**
+> **Build the simplest correct solution for the current requirement, then evolve it only when new constraints justify additional complexity.**
 
 ---
 
@@ -91,28 +91,30 @@ The objective is not to build the most complicated architecture.
 
 ### Situation
 
-A fraud-detection ML team receives transaction data from an upstream system.
+A fraud-detection ML team receives transaction files from upstream clients.
 
-The incoming data cannot be trusted to always be clean or unique.
+Incoming files cannot be assumed to be perfectly clean, unique, or reliable.
 
-Possible issues include:
+Possible problems include:
 
-* exact duplicate transactions
-* conflicting records with the same transaction ID
-* missing transaction IDs
-* missing customer IDs
-* invalid transaction amounts
+* exact duplicate records
+* conflicting records sharing the same transaction ID
+* missing identifiers
+* invalid amounts
 * unsupported currencies
 * malformed timestamps
-* repeated delivery of an already processed file
+* duplicate file delivery
+* failed processing attempts
+* multiple files waiting for processing
+* one malformed file among otherwise valid files
 
-The ingestion component must validate the incoming data and prepare reliable outputs for downstream ML workflows.
+The goal is to evolve a simple Pandas validation script into a more reliable **batch ingestion component**.
 
 ---
 
-## Input Schema
+# Transaction Schema
 
-Each transaction contains:
+Each valid transaction contains:
 
 ```text
 transaction_id
@@ -126,34 +128,28 @@ Example:
 
 ```csv
 transaction_id,customer_id,amount,currency,timestamp
-txn_1001,cust_201,1250.50,INR,2026-08-22T09:15:00
-txn_1002,cust_202,499.99,USD,2026-08-22T09:18:25
+txn_1001,cust_201,1250.50,INR,2026-09-01T09:15:00
+txn_1002,cust_202,499.99,USD,2026-09-01T09:18:25
 ```
 
 ---
 
-## Functional Requirements
+# Validation Layer
 
-The pipeline currently supports:
+The pipeline currently validates:
 
-* required identifier validation
-* configurable currency validation
-* numeric amount validation
-* rejection of non-positive amounts
-* ISO timestamp validation
-* exact duplicate detection
-* conflicting duplicate detection
-* separation of valid and rejected records
-* preservation of rejection reasons
-* processing malformed rows without crashing the entire batch
-* duplicate-file detection using content hashing
-* skipping a file that has already been successfully processed
+* required transaction identifiers
+* customer identifiers
+* numeric transaction amounts
+* positive amounts
+* configurable currencies
+* ISO timestamps
+* exact duplicates
+* conflicting duplicate transactions
 
----
+Every record receives a `rejection_reason`.
 
-# Validation Behaviour
-
-Examples of rejection reasons currently tracked:
+Example reasons:
 
 ```text
 duplicate record
@@ -165,76 +161,81 @@ invalid currency
 invalid timestamp
 ```
 
-### Exact Duplicate
+---
+
+## Exact Duplicate
+
+Two records contain the same transaction ID and the same transaction data:
 
 ```text
 txn_1001, cust_201, 1250.50, INR, ...
 txn_1001, cust_201, 1250.50, INR, ...
 ```
 
-The repeated record is treated as a duplicate.
+The repeated record is treated as an exact duplicate.
 
-### Conflicting Duplicate
+---
+
+## Conflicting Duplicate
+
+The same transaction ID appears with different transaction data:
 
 ```text
 txn_7001, cust_701, 1000.00, INR, ...
 txn_7001, cust_701, 2500.00, INR, ...
 ```
 
-The same transaction ID refers to different transaction data.
-
-This is treated separately from a normal duplicate because the system cannot safely determine which version is correct.
+This is treated differently from an exact duplicate because the pipeline cannot safely determine which version represents the real transaction.
 
 ---
 
-# Current Data Flow
+# Record-Level Data Flow
 
 ```text
-raw_transactions.csv
+Incoming Transactions
         ↓
-   validate_data()
+    validate_data()
         ↓
 Validated DataFrame
         ↓
-┌─────────────────────────────┐
-│                             │
-rejection_reason == ""    rejection_reason != ""
-│                             │
-↓                             ↓
-Clean Records             Rejected Records
-│                             │
-↓                             ↓
-clean_transactions.csv    reject_transactions.csv
+┌──────────────────────────────┐
+│                              │
+rejection_reason == ""     rejection_reason != ""
+│                              │
+↓                              ↓
+Clean Records               Rejected Records
 ```
+
+This keeps malformed records from unnecessarily crashing the complete transaction batch.
 
 ---
 
 # Idempotent File Processing
 
-The pipeline is being extended beyond row-level validation to handle repeated file delivery safely.
+The pipeline also handles repeated delivery of the same file.
 
-A common real-world scenario is:
+Example:
 
 ```text
-Upstream sends file
-        ↓
+Client sends file
+      ↓
 Pipeline processes it
-        ↓
-Network / client retry
-        ↓
+      ↓
+Client/network retries
+      ↓
 Same file arrives again
 ```
 
-Without idempotency, the same input could be processed multiple times.
+Without protection, the same data could be processed repeatedly.
 
-The current implementation uses a **SHA-256 content hash** as a file fingerprint.
+The current implementation calculates a **SHA-256 content hash** for every input file.
 
 ```text
 Incoming File
       ↓
 Calculate SHA-256
       ↓
-Check Processing State
+Lookup Processing History
       ↓
 Already Completed?
    ├── Yes → Skip
@@ -243,135 +244,270 @@ Already Completed?
 
 ---
 
-## Why Hash the File?
+## Why Content Hashing?
 
-Filename alone is not enough.
+Filename alone is not a reliable identity.
 
-Two files can have:
-
-```text
-same filename
-different content
-```
-
-or:
+These situations are possible:
 
 ```text
-different filename
-same content
+same filename + different content
 ```
 
-A content hash provides a fingerprint derived from the actual file bytes.
+and:
 
-The file is hashed incrementally in chunks rather than loading the complete file into memory.
+```text
+different filename + same content
+```
+
+A SHA-256 hash fingerprints the actual file bytes.
+
+The file is hashed incrementally in chunks instead of loading the whole file into memory purely for hashing.
 
 ---
 
-# Processing State
+# Processing State Lifecycle
 
-A lightweight JSON state file currently tracks processed input files.
+A lightweight JSON state store tracks file processing history.
 
-Conceptually:
-
-```json
-{
-  "file_hash_here": {
-    "file_name": "raw_transactions_day1.csv",
-    "status": "Completed"
-  }
-}
-```
-
-Current behaviour:
-
-```text
-New hash
-    ↓
-Process file
-    ↓
-Completed
-    ↓
-Persist file hash and status
-```
-
-If the same successfully processed content arrives again:
-
-```text
-Same SHA-256
-      ↓
-Status = Completed
-      ↓
-Skip duplicate processing
-```
-
----
-
-# Reliability Work In Progress
-
-The next reliability stage will evolve processing state into:
+Each file hash can move through:
 
 ```text
 NEW
  ↓
 PROCESSING
- ├──→ COMPLETED
+ ├────────→ COMPLETED
  │
- └──→ FAILED
+ └────────→ FAILED
 ```
 
-Expected behaviour:
+Current behaviour:
 
-| State      | Behaviour              |
-| ---------- | ---------------------- |
-| New file   | Process                |
-| Processing | Track active execution |
-| Completed  | Skip repeated file     |
-| Failed     | Allow retry            |
+| State      | Behaviour                    |
+| ---------- | ---------------------------- |
+| New        | Start processing             |
+| Processing | Work has started             |
+| Completed  | Skip repeated processing     |
+| Failed     | Allow the file to be retried |
 
-Future work in the same engineering situation will also introduce:
+Example state:
 
-* failed-file retry handling
-* processing multiple files
-* failure isolation between files
-* large-file processing
-* chunk-based CSV ingestion
-* stronger state management
-* storage trade-offs
-* final scale/system-design analysis
+```json
+{
+  "file_hash_here": {
+    "file_name": "client_a_day1.csv",
+    "status": "Completed"
+  }
+}
+```
+
+---
+
+# Failure + Retry Behaviour
+
+A processing attempt first persists:
+
+```text
+Processing
+```
+
+If all validation and output operations succeed:
+
+```text
+Processing
+    ↓
+Completed
+```
+
+If an exception occurs:
+
+```text
+Processing
+    ↓
+Failed
+```
+
+A failed file can be submitted again.
+
+```text
+Failed
+  ↓
+Retry
+  ↓
+Processing
+  ↓
+Completed
+```
+
+This behaviour has been manually verified with an intentionally failing transaction file.
+
+---
+
+# Multiple-File Batch Processing
+
+The ingestion component now discovers multiple files from:
+
+```text
+data/raw/
+```
+
+Example:
+
+```text
+data/raw/
+├── client_a_day1.csv
+├── client_b_day1.csv
+├── client_c_day1.csv
+└── client_d_bad_schema.csv
+```
+
+Each file is handled independently.
+
+Conceptually:
+
+```text
+Discover Raw Files
+        ↓
+For Each File
+        ↓
+Calculate Hash
+        ↓
+Check Previous Status
+        ↓
+┌───────────────────────────────┐
+│                               │
+Completed                    New / Failed
+│                               │
+Skip                        Processing
+                                ↓
+                             Process
+                          ┌─────┴─────┐
+                          ↓           ↓
+                     Completed      Failed
+```
+
+---
+
+# Failure Isolation
+
+A major reliability requirement is:
+
+> **One malformed file must not prevent unrelated files from being processed.**
+
+This behaviour is now working.
+
+Example batch:
+
+```text
+client_a_day1.csv       → Completed
+client_b_day1.csv       → Completed
+client_c_day1.csv       → Completed
+client_d_bad_schema.csv → Failed
+```
+
+The fourth file intentionally has a schema problem.
+
+Its failure does not stop the successfully processed files.
+
+On another run:
+
+```text
+client_a → already processed, skip
+client_b → already processed, skip
+client_c → already processed, skip
+client_d → retry because previous status = Failed
+```
+
+This combines:
+
+* file-level idempotency
+* retry behaviour
+* state persistence
+* failure isolation
+
+---
+
+# Per-File Outputs
+
+Each successfully processed input file produces its own outputs rather than allowing later files to overwrite previous results.
+
+Target structure:
+
+```text
+data/processed/
+├── client_a_day1_clean.csv
+├── client_a_day1_rejected.csv
+├── client_b_day1_clean.csv
+├── client_b_day1_rejected.csv
+├── client_c_day1_clean.csv
+└── client_c_day1_rejected.csv
+```
+
+This preserves traceability between:
+
+```text
+input file
+    ↓
+clean output
+    ↓
+rejected output
+```
 
 ---
 
 # Current Architecture
 
 ```text
-data/raw/
-    │
-    ↓
-Incoming CSV
-    │
-    ├──→ SHA-256 Hash
-    │       ↓
-    │   Processing State
-    │       ↓
-    │   Completed?
-    │    ├─ Yes → Skip
-    │    └─ No
-    │
-    ↓
-validate_data()
-    │
-    ├──→ Clean Records
-    │       ↓
-    │   clean_transactions.csv
-    │
-    └──→ Rejected Records
-            ↓
-        reject_transactions.csv
+                         ┌────────────────────┐
+                         │     data/raw/      │
+                         │ Multiple CSV Files │
+                         └─────────┬──────────┘
+                                   │
+                                   ↓
+                         Discover Input Files
+                                   │
+                                   ↓
+                            SHA-256 Hash
+                                   │
+                                   ↓
+                       ┌──────────────────────┐
+                       │ Processing History   │
+                       │ processed_files.json │
+                       └──────────┬───────────┘
+                                  │
+                   ┌──────────────┴──────────────┐
+                   │                             │
+             Already Completed              New / Failed
+                   │                             │
+                 Skip                        Processing
+                                                 │
+                                                 ↓
+                                          Read CSV File
+                                                 │
+                                                 ↓
+                                           validate_data()
+                                                 │
+                         ┌───────────────────────┴───────────────────────┐
+                         │                                               │
+                         ↓                                               ↓
+                    Clean Records                                 Rejected Records
+                         │                                               │
+                         ↓                                               ↓
+                  Per-File Clean CSV                            Per-File Reject CSV
+                         │
+                         ↓
+                     Completed
+
+Any file-level exception
+        ↓
+      Failed
+        ↓
+Other files continue processing
 ```
 
 ---
 
-# Repository Structure
+# Current Repository Structure
 
 ```text
 applied-data-ai-engineering-lab/
@@ -383,6 +519,11 @@ applied-data-ai-engineering-lab/
     │
     ├── data/
     │   ├── raw/
+    │   │   ├── client_a_day1.csv
+    │   │   ├── client_b_day1.csv
+    │   │   ├── client_c_day1.csv
+    │   │   └── client_d_bad_schema.csv
+    │   │
     │   └── processed/
     │
     ├── tests/
@@ -394,41 +535,85 @@ applied-data-ai-engineering-lab/
     └── uv.lock
 ```
 
-Each future engineering situation will live in its own directory with its own implementation, tests, and architecture evolution.
-
 ---
 
 # Testing
 
 The project uses `pytest`.
 
-Current tests cover important validation behaviour including:
+Current validation tests cover cases such as:
 
 * duplicate records
-* invalid currencies
+* unsupported currencies
 * negative amounts
 * non-numeric amounts
 * missing customer IDs
 * whitespace-only customer IDs
 * invalid timestamps
 * invalid transaction IDs
-* valid transaction behaviour
 
-Run tests with:
+Run:
 
 ```bash
 uv run pytest -v
 ```
 
-The goal is not to maximize the number of tests.
+Manual reliability scenarios have also been used to verify:
 
-The goal is to verify important engineering behaviour and expose failure modes before scaling the design.
+```text
+same completed file → skipped
+
+failed file → retried
+
+successful retry → Completed
+
+one malformed file → Failed
+
+other files → continue processing
+```
+
+---
+
+# Current Constraints
+
+The implementation intentionally remains simple.
+
+```text
+Execution      Single machine
+Processing     Single process
+Input          CSV files
+Library        Pandas
+State Store    JSON file
+Storage        Local filesystem
+Concurrency    None
+```
+
+Distributed systems are not introduced yet because the current requirements do not justify them.
+
+---
+
+# Engineering Principles Practiced
+
+1. **Understand before implementing.**
+2. **Do not invent unnecessary business rules.**
+3. **Make assumptions explicit.**
+4. **Treat malformed input as expected.**
+5. **Do not let one bad record crash a whole batch.**
+6. **Do not let one bad file stop unrelated files.**
+7. **Distinguish exact duplicates from conflicting records.**
+8. **Use configuration for changing business rules.**
+9. **Design retries to be idempotent.**
+10. **Persist important processing state.**
+11. **Track intermediate processing states.**
+12. **Separate file-level failure from row-level rejection.**
+13. **Avoid unnecessary infrastructure.**
+14. **Scale only when the existing design reaches a real constraint.**
 
 ---
 
 # Development Setup
 
-This repository uses [`uv`](https://docs.astral.sh/uv/) for Python dependency and virtual-environment management.
+This repository uses [`uv`](https://docs.astral.sh/uv/) for environment and dependency management.
 
 ## Create Environment
 
@@ -436,9 +621,7 @@ This repository uses [`uv`](https://docs.astral.sh/uv/) for Python dependency an
 uv venv .venv
 ```
 
-## Activate
-
-Git Bash on Windows:
+## Activate — Git Bash / Windows
 
 ```bash
 source .venv/Scripts/activate
@@ -465,148 +648,6 @@ uv run pytest -v
 
 ---
 
-# Engineering Principles
-
-1. **Understand the requirement before coding.**
-2. **Do not invent business rules that were never specified.**
-3. **Make assumptions explicit.**
-4. **Treat malformed input as an expected condition.**
-5. **Do not let one bad record unnecessarily crash an entire batch.**
-6. **Distinguish exact duplicates from conflicting data.**
-7. **Prefer independently testable components.**
-8. **Use configuration where business behaviour can change.**
-9. **Design retries to be safe and idempotent.**
-10. **Persist important processing state instead of relying only on memory.**
-11. **Optimize based on real constraints rather than hypothetical scale.**
-12. **Avoid unnecessary abstractions and premature microservices.**
-13. **Architecture choices must be justified through requirements and trade-offs.**
-
----
-
-# Code Review Dimensions
-
-Every implementation is reviewed across:
-
-| Area                | Main Question                                                       |
-| ------------------- | ------------------------------------------------------------------- |
-| Correctness         | Does it satisfy the actual requirement?                             |
-| Design              | Are responsibilities separated appropriately?                       |
-| Readability         | Can another engineer understand it quickly?                         |
-| Robustness          | What happens when input or execution fails?                         |
-| Performance         | Is it suitable for the current scale?                               |
-| Maintainability     | Can future requirements be added safely?                            |
-| Testability         | Can behaviour be verified independently?                            |
-| Production Concerns | Are configuration, retries, state, logging and failures considered? |
-
----
-
-# Complexity Progression
-
-| Level   | Focus                                   |
-| ------- | --------------------------------------- |
-| Level 1 | Single component                        |
-| Level 2 | Multiple functions / classes            |
-| Level 3 | Multiple modules / components           |
-| Level 4 | Service-level architecture              |
-| Level 5 | Production-like reliability and scaling |
-
-The repository begins at **Level 2**, assuming familiarity with Python, Data Science, Machine Learning, APIs, and common engineering tooling.
-
----
-
-# Areas This Lab Will Cover
-
-### Python Engineering
-
-* batch processing
-* configuration
-* caching
-* retries
-* rule engines
-* file processing
-* concurrency
-* race conditions
-
-### Data Engineering
-
-* validation
-* schema evolution
-* deduplication
-* idempotency
-* chunk processing
-* incremental ingestion
-* Parquet
-* partitioning
-* late-arriving data
-
-### SQL & Analytics Engineering
-
-* CTEs
-* joins
-* window functions
-* funnels
-* cohorts
-* retention
-* rolling metrics
-* query design
-
-### Machine Learning Systems
-
-* preprocessing pipelines
-* training pipelines
-* batch inference
-* online inference
-* feature consistency
-* monitoring
-* drift detection
-* model versioning
-
-### Backend for Data & AI
-
-* FastAPI
-* uploads
-* asynchronous jobs
-* request/response contracts
-* dependency failures
-* API versioning
-* health checks
-
-### NLP & RAG
-
-* ingestion
-* chunking
-* retrieval
-* metadata filters
-* hybrid search
-* reranking
-* citations
-* evaluation
-* caching
-
-### Agentic AI
-
-* routing
-* tool execution
-* state
-* retries
-* human approval
-* permissions
-* audit trails
-
-### Production & MLOps
-
-* Docker
-* CI/CD
-* MLflow
-* configuration
-* structured logging
-* model versioning
-* monitoring
-* rollback
-* reliability
-
----
-
 # Progress Tracker
 
 Ratings are based only on engineering work actually completed.
@@ -625,7 +666,7 @@ Ratings are based only on engineering work actually completed.
 | System Design        | Developing        |
 | Scalability Thinking | Developing        |
 
-No skill is marked **Strong** or **Independent** after a single exercise.
+A skill is not marked **Strong** or **Independent** after a single engineering situation.
 
 ---
 
@@ -637,61 +678,136 @@ Title: Transaction Ingestion Pipeline
 Level: 2
 Status: In Progress
 
-Completed:
+COMPLETED
+────────────────────────────────────────────
 ✓ Core transaction validation
 ✓ Configurable currency validation
 ✓ Rejection-reason tracking
-✓ Clean/rejected data separation
+✓ Clean/rejected separation
 ✓ Exact duplicate detection
 ✓ Conflicting duplicate detection
 ✓ pytest validation coverage
 ✓ SHA-256 file fingerprinting
-✓ Persistent processing state
-✓ Basic idempotent processing
-✓ Skip already completed files
+✓ Persistent processing history
+✓ Idempotent processing
+✓ Processing state persistence
+✓ Failed-file retry
+✓ Completed-file skip
+✓ Multiple-file discovery
+✓ Multiple-file processing
+✓ Failure isolation
+✓ Per-input-file output separation
 
-Current Stage:
-Processing State Lifecycle
+CURRENT CHECKPOINT
+────────────────────────────────────────────
+Multiple-file resilient batch processing
+
+NEXT
+────────────────────────────────────────────
+Schema validation
         ↓
-Failure & Retry Handling
+Large-file / chunk processing
         ↓
-Multiple File Processing
+Reliability tests
         ↓
-Large File / Chunk Processing
-        ↓
-Final System Design
+Final scale & system-design round
 ```
 
 ---
 
-# Upcoming Engineering Directions
+# Remaining Work — Situation 01
 
-Future situations will progressively introduce:
+Situation 01 is intentionally not finished yet.
 
-* resilient file-processing systems
-* concurrency and race-condition handling
-* incremental ingestion
-* large-file pipelines
+The remaining engineering work includes:
+
+### 1. File-Level Schema Validation
+
+Before row validation starts, verify that required columns exist.
+
+Example:
+
+```text
+Required:
+transaction_id
+customer_id
+amount
+currency
+timestamp
+```
+
+A malformed schema should fail with a clear file-level reason instead of failing unexpectedly deep inside validation logic.
+
+### 2. Large-File Processing
+
+The current implementation uses:
+
+```python
+pd.read_csv(...)
+```
+
+which loads the file into memory.
+
+The next scale constraint will introduce files that may not comfortably fit in RAM.
+
+This will require reasoning about:
+
+```text
+chunked reads
+memory usage
+cross-chunk duplicate detection
+output writing
+state management
+```
+
+### 3. Reliability Testing
+
+Important behaviours such as:
+
+```text
+Completed → skip
+Failed → retry
+one file fails → next file continues
+```
+
+should eventually be verified with automated tests rather than only manual runs.
+
+### 4. Final System Design
+
+The local implementation will finally be expanded conceptually to larger client volume and transaction throughput.
+
+Only then will storage, workers, queues, databases, object storage, observability, and other architectural components be evaluated according to actual requirements.
+
+---
+
+# Future Lab Directions
+
+After Situation 01, future engineering situations will cover different problem types, including:
+
+* Python application logic
+* concurrency and race conditions
+* SQL analytics engineering
+* ML training and inference systems
 * prediction APIs
-* asynchronous ML jobs
-* batch and online inference
-* feature consistency
+* asynchronous jobs
 * model monitoring
-* experiment tracking
+* feature consistency
 * RAG ingestion and retrieval
 * hybrid search
-* agent approval workflows
+* agent state and approval workflows
+* caching
 * production reliability
-* architecture and scaling trade-offs
+* MLOps
+* architecture trade-offs
 
 ---
 
 ## Philosophy
 
-> **Strong engineering is not knowing the maximum number of tools. It is being able to understand an unfamiliar problem, choose appropriate tools, build the simplest correct solution, test it, handle failure, and evolve the design as requirements change.**
+> **Strong engineering is not knowing the maximum number of tools. It is being able to understand an unfamiliar problem, build the simplest correct solution, test its behaviour, handle failure safely, and evolve the design when the requirements change.**
 
 ---
 
-### Repository
+## Repository
 
 **GitHub:** [shivamrajput-ds/applied-data-ai-engineering-lab](https://github.com/shivamrajput-ds/applied-data-ai-engineering-lab)

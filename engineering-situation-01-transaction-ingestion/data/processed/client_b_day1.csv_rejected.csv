@@ -1,0 +1,5 @@
+transaction_id,customer_id,amount,currency,timestamp,rejection_reason
+txn_b002,,500,USD,2026-09-01T10:05:00,invalid customer id
+txn_b003,cust_b03,abc,INR,2026-09-01T10:10:00,invalid amount
+txn_b004,cust_b04,640,BTC,2026-09-01T10:15:00,invalid currency
+txn_b005,cust_b05,910,EUR,bad-date,invalid timestamp

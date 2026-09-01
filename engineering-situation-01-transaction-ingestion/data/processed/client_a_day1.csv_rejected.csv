@@ -1,0 +1,3 @@
+transaction_id,customer_id,amount,currency,timestamp,rejection_reason
+txn_a003,cust_a03,-40.0,INR,2026-09-01T09:10:00,invalid amount
+txn_a004,cust_a04,750.0,EUR,2026-09-01T09:15:00,duplicate record

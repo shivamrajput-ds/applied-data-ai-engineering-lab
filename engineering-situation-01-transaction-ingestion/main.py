@@ -128,40 +128,65 @@ def save_preprocessing_state(file_name,data):
         json.dump(data,file,indent = 4)
       
 def main():
-    path = os.path.join("data","raw","raw_transactions_day1.csv")
-    
-    file_hash = calculate_file_hash(path)
-    file_name = os.path.basename(path)
-    
-    full_data = load_preprocessing_state("processed_files.json")
-    
-    if file_hash not in full_data or full_data[file_hash]['status'] != 'Completed':
-        data = pd.read_csv(path)
+    raw_dir = os.path.join(
+    "data",
+    "raw"
+)
 
-        validated_data = validate_data(data, ["INR", "USD", "EUR"])
+    all_files = [f for f in os.listdir(raw_dir) if os.path.isfile(os.path.join(raw_dir, f))]
+    
+    for file in all_files:
 
-        rejected_data = validated_data[
-            validated_data["rejection_reason"] != ""
-        ].copy()
-
-        cleaned_data = validated_data[
-            validated_data["rejection_reason"] == ""
-        ].copy()
-        # to move the clean data into Processed folder
-        cleaned_data.to_csv("data/processed/clean_transactions.csv", index=False)
+        file_path = os.path.join(raw_dir,file)
+        file_hash = calculate_file_hash(file_path)
+        file_name = os.path.basename(file_path)
         
-        # to move the rejected data into Processed folder
-        rejected_data.to_csv("data/processed/reject_transactions.csv", index=False)
+        history_json = load_preprocessing_state("processed_files.json")
         
-        full_data[file_hash] = {
-    "file_name": file_name,
-    "status": "Completed"
-}
-        save_preprocessing_state(
-            "processed_files.json",full_data)
-    else:
+        if file_hash not in history_json or history_json[file_hash]['status'] != 'Completed':
+            try:
+                history_json[file_hash] = {'file_name':file_name,
+                'status' : 'Processing'}
+                
+                save_preprocessing_state(
+                                "processed_files.json",history_json)
+            
+                data = pd.read_csv(file_path)
 
-        print("File hash is Present with status : Completed")  
+                validated_data = validate_data(data, ["INR", "USD", "EUR"])
+
+                rejected_data = validated_data[
+                    validated_data["rejection_reason"] != ""
+                ].copy()
+
+                cleaned_data = validated_data[
+                    validated_data["rejection_reason"] == ""
+                ].copy()
+                # to move the clean data into Processed folder
+                cleaned_data.to_csv(f"data/processed/{file_name +'_clean.csv'}", index=False)
+                
+                # to move the rejected data into Processed folder
+                rejected_data.to_csv(f"data/processed/{file_name +'_rejected.csv'}", index=False)
+                
+                history_json[file_hash] = {
+            "file_name": file_name,
+            "status": "Completed"
+        }
+                save_preprocessing_state(
+                    "processed_files.json",history_json)
+            except Exception as e:
+                history_json[file_hash] = {'file_name':file_name,
+                            'status' : 'Failed'}
+                
+                save_preprocessing_state(
+                                "processed_files.json",history_json)
+                
+                print(f"{file_name}, Failed.Reason : {e}")
+                            
+        
+        elif file_hash in history_json and history_json[file_hash]['status'] == 'Completed':
+            print(f"{file_name}, already processed. Skipping.")
+                   
         
 if __name__== "__main__":
     main()

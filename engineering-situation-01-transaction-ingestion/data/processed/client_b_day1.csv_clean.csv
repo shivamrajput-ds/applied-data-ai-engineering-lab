@@ -1,0 +1,2 @@
+transaction_id,customer_id,amount,currency,timestamp,rejection_reason
+txn_b001,cust_b01,890,INR,2026-09-01T10:00:00,
