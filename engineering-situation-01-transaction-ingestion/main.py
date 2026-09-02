@@ -5,6 +5,21 @@ import hashlib
 
 import json
 
+def validate_schema(df):
+    columns = ['transaction_id',
+                'customer_id',
+                'amount',
+                'currency',
+                'timestamp']
+    
+    df_cols = df.columns
+    for col in columns:
+        if col in df_cols:
+            continue
+        else:
+            raise ValueError(f"Columns - {col} is Missing")
+        
+        
 def validate_data(df: pd.DataFrame,valid_currency:List[str])-> pd.DataFrame:
     
     valid_data = df.copy()
@@ -140,6 +155,7 @@ def main():
         file_path = os.path.join(raw_dir,file)
         file_hash = calculate_file_hash(file_path)
         file_name = os.path.basename(file_path)
+        file_stem = os.path.splitext(file_name)[0]
         
         history_json = load_preprocessing_state("processed_files.json")
         
@@ -150,8 +166,10 @@ def main():
                 
                 save_preprocessing_state(
                                 "processed_files.json",history_json)
-            
+
                 data = pd.read_csv(file_path)
+                
+                validate_schema(data)
 
                 validated_data = validate_data(data, ["INR", "USD", "EUR"])
 
@@ -163,10 +181,10 @@ def main():
                     validated_data["rejection_reason"] == ""
                 ].copy()
                 # to move the clean data into Processed folder
-                cleaned_data.to_csv(f"data/processed/{file_name +'_clean.csv'}", index=False)
+                cleaned_data.to_csv(f"data/processed/{file_stem +'_clean.csv'}", index=False)
                 
                 # to move the rejected data into Processed folder
-                rejected_data.to_csv(f"data/processed/{file_name +'_rejected.csv'}", index=False)
+                rejected_data.to_csv(f"data/processed/{file_stem +'_rejected.csv'}", index=False)
                 
                 history_json[file_hash] = {
             "file_name": file_name,
@@ -181,7 +199,7 @@ def main():
                 save_preprocessing_state(
                                 "processed_files.json",history_json)
                 
-                print(f"{file_name}, Failed.Reason : {e}")
+                print(f"{file_name}, Failed. Reason -> {e}")
                             
         
         elif file_hash in history_json and history_json[file_hash]['status'] == 'Completed':

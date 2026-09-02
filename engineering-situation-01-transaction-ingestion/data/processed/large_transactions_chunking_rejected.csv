@@ -1,0 +1,17 @@
+transaction_id,customer_id,amount,currency,timestamp,rejection_reason
+txn_0025000,cust_25001,-100.0,USD,2026-09-03T05:50:00,invalid amount
+txn_0040000,cust_40001,850.0,BTC,2026-09-03T18:20:00,invalid currency
+txn_0050000,cust_00001,550.0,EUR,2026-09-04T02:40:00,conflicting duplicate
+txn_0060000,cust_10001,250.0,INR,invalid-date,invalid timestamp
+txn_0080000,   ,1650.0,EUR,2026-09-05T03:40:00,invalid customer id
+txn_0125000,cust_25001,-100.0,EUR,2026-09-06T17:10:00,invalid amount
+txn_0140000,cust_40001,1850.0,BTC,2026-09-07T05:40:00,invalid currency
+txn_0050000,cust_00001,550.0,EUR,2026-09-04T02:40:00,duplicate record
+txn_0160000,cust_10001,1250.0,USD,invalid-date,invalid timestamp
+txn_0180000,   ,650.0,INR,2026-09-08T15:00:00,invalid customer id
+txn_0225000,cust_25001,-100.0,INR,2026-09-10T04:30:00,invalid amount
+txn_0240000,cust_40001,850.0,BTC,2026-09-10T17:00:00,invalid currency
+txn_0050000,cust_00001,1327.77,EUR,2026-09-04T02:40:00,conflicting duplicate
+txn_0260000,cust_10001,250.0,EUR,invalid-date,invalid timestamp
+txn_0280000,   ,1650.0,USD,2026-09-12T02:20:00,invalid customer id
+txn_0315000,cust_15001,-100.0,INR,2026-09-13T07:30:00,invalid amount

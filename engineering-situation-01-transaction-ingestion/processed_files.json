@@ -1,12 +1,4 @@
 {
-    "16d8c05fc47f9661aa7e574646be679eaad773c3d54703d2bed1657c6c225fb1": {
-        "file_name": "raw_transactions_day1.csv",
-        "status": "Completed"
-    },
-    "05c9b4f17c4a895e6dd8f522e60a6827da68c87f2c0b7b4f1d28ca8ab1b899d3": {
-        "file_name": "raw_transactions_failure.csv",
-        "status": "Completed"
-    },
     "0bd4bc149160ac90f0136ec683abf39689036e317f1ba2ff743dc9189b1d9318": {
         "file_name": "client_a_day1.csv",
         "status": "Completed"
@@ -22,5 +14,9 @@
     "2619ae31cefb4b4fc5329419d134f201999815418ca6a9bd68ae748d341a41e3": {
         "file_name": "client_d_bad_schema.csv",
         "status": "Failed"
+    },
+    "0b212305136e9d308fb3312cf4afcbdc33a989e6773475c059c7f4555599997b": {
+        "file_name": "large_transactions_chunking.csv",
+        "status": "Completed"
     }
 }
